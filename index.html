@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chest Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a24;
+    --border: #22222e;
+    --border2: #30303e;
+    --ink: #d8d8ec;
+    --ink-mid: #a0a0b8;
+    --ink-dim: #606078;
+    --gold: #c89820;
+    --gold-bg: rgba(200,152,32,0.1);
+    --green: #40d080;
+    --green-bg: rgba(64,208,128,0.1);
+    --red: #ff5050;
+    --blue: #4a9aff;
+    --blue-bg: rgba(74,154,255,0.1);
+    --purple: #c070e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 36px 20px; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+
+  .sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    margin-top: 3px;
+    letter-spacing: 1px;
+  }
+
+  .header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .player-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 7px 12px;
+    width: 160px;
+  }
+
+  .player-input:focus { outline: none; border-color: var(--gold); }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--ink-mid);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .btn.primary { border-color: var(--gold); background: var(--gold-bg); color: var(--gold); }
+
+  .status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 9px 14px;
+    border-left: 3px solid var(--border2);
+    color: var(--ink-dim);
+    margin-bottom: 20px;
+    background: var(--surface);
+  }
+
+  .status.loading { border-color: var(--gold); color: var(--gold); }
+  .status.error { border-color: var(--red); color: var(--red); }
+  .status.success { border-color: var(--green); color: var(--green); }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 5px;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-dim);
+    margin-top: 3px;
+  }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .table-header {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .data-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    padding: 8px 14px;
+    text-align: right;
+    border-bottom: 1px solid var(--border2);
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+
+  .data-table th:first-child,
+  .data-table th:nth-child(2) { text-align: left; }
+
+  .data-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    color: var(--ink-mid);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+
+  .data-table td:first-child {
+    text-align: left;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .data-table td:nth-child(2) {
+    text-align: left;
+    color: var(--ink-dim);
+    font-size: 11px;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table tr.zero-row td { opacity: 0.3; }
+  .data-table tr.total-row td {
+    background: var(--surface2);
+    border-top: 2px solid var(--border2);
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+
+  .pts-badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--border2);
+    color: var(--ink-dim);
+  }
+
+  .pts-badge.high { border-color: var(--gold); color: var(--gold); background: var(--gold-bg); }
+  .pts-badge.mid { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+  /* Bar chart */
+  .bar-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 56px 80px;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bar-row:last-child { border-bottom: none; }
+  .bar-row:hover { background: var(--surface2); }
+
+  .bar-name { font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-wrap { height: 5px; background: var(--border2); border-radius: 1px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--gold); opacity: 0.65; }
+  .bar-count { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-mid); text-align: right; font-weight: 600; }
+  .bar-pts { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--gold); text-align: right; }
+
+  /* Filter tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { border-color: var(--gold); color: var(--gold); }
+  .tab.active { border-color: var(--gold); background: var(--gold-bg); color: var(--gold); }
+
+  .empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--ink-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .bar-row { grid-template-columns: 1fr 50px; }
+    .bar-wrap { display: none; }
+    .bar-pts { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div>
+      <div class="title">Chest Tracker</div>
+      <div class="sub" id="cycle-info">97donkeys · current cycle</div>
+    </div>
+    <div class="header-right">
+      <input type="text" class="player-input" id="player-input" placeholder="Player name..." value="PyBoK IHX">
+      <button class="btn primary" onclick="loadData()">Load</button>
+      <button class="btn" onclick="loadData(true)">↺ Refresh</button>
+    </div>
+  </div>
+
+  <div class="status loading" id="status">Loading...</div>
+
+  <div id="stats-grid" class="stats-grid" style="display:none">
+    <div class="stat-card">
+      <div class="stat-label">Total Chests</div>
+      <div class="stat-value" id="s-total">—</div>
+      <div class="stat-sub" id="s-glvl">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Selected Chests</div>
+      <div class="stat-value" id="s-selected">—</div>
+      <div class="stat-sub">counted sources only</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Points</div>
+      <div class="stat-value" id="s-points">—</div>
+      <div class="stat-sub">weighted score</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Value</div>
+      <div class="stat-value" id="s-avg">—</div>
+      <div class="stat-sub">pts per selected chest</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs" style="display:none">
+    <div class="tab active" onclick="setFilter('all', this)">All</div>
+    <div class="tab" onclick="setFilter('crypts', this)">Crypts</div>
+    <div class="tab" onclick="setFilter('monsters', this)">Monsters</div>
+    <div class="tab" onclick="setFilter('omens', this)">Omens</div>
+    <div class="tab" onclick="setFilter('other', this)">Other</div>
+    <div class="tab" onclick="toggleZeros(this)">Hide zeros</div>
+  </div>
+
+  <div class="table-wrap" id="chart-wrap" style="display:none">
+    <div class="table-header">
+      <span>Chests by Source</span>
+      <span id="chart-sub"></span>
+    </div>
+    <div id="bar-chart"></div>
+  </div>
+
+  <div class="table-wrap" id="table-wrap" style="display:none">
+    <div class="table-header">
+      <span>Full Breakdown</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Category</th>
+          <th>Chests</th>
+          <th>Pts/chest</th>
+          <th>Total Pts</th>
+          <th>% of all</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="empty" id="empty" style="display:none">No data found for this player.</div>
+
+</div>
+
+<script>
+// ── Source definitions ──────────────────────────────────────────────────────
+const SOURCES = {
+  // Crypts
+  l5c:       { name: 'L5 Crypt',            cat: 'crypts',   pts: 0   },
+  l10cit:    { name: 'L10 Crypt (city)',     cat: 'crypts',   pts: 0   },
+  l10c:      { name: 'L10 Crypt',           cat: 'crypts',   pts: 0   },
+  l10rc:     { name: 'L10 Rare Crypt',      cat: 'crypts',   pts: 0   },
+  l15cit:    { name: 'L15 Crypt (city)',     cat: 'crypts',   pts: 0   },
+  l15c:      { name: 'L15 Crypt',           cat: 'crypts',   pts: 0   },
+  l15ec:     { name: 'L15 Epic Crypt',      cat: 'crypts',   pts: 0   },
+  l15rc:     { name: 'L15 Rare Crypt',      cat: 'crypts',   pts: 0   },
+  l20cit:    { name: 'L20 Crypt (city)',     cat: 'crypts',   pts: 0   },
+  l20c:      { name: 'L20 Crypt',           cat: 'crypts',   pts: 0   },
+  l20ec:     { name: 'L20 Epic Crypt',      cat: 'crypts',   pts: 0   },
+  l20rc:     { name: 'L20 Rare Crypt',      cat: 'crypts',   pts: 0   },
+  l25cit:    { name: 'L25 Crypt (city)',     cat: 'crypts',   pts: 0   },
+  l25c:      { name: 'L25 Crypt',           cat: 'crypts',   pts: 0   },
+  l25ec:     { name: 'L25 Epic Crypt',      cat: 'crypts',   pts: 0   },
+  l25rc:     { name: 'L25 Rare Crypt',      cat: 'crypts',   pts: 30  },
+  l30cit:    { name: 'L30 Crypt (city)',     cat: 'crypts',   pts: 0   },
+  l30ec:     { name: 'L30 Epic Crypt',      cat: 'crypts',   pts: 100 },
+  l30rc:     { name: 'L30 Rare Crypt',      cat: 'crypts',   pts: 80  },
+  l35ec:     { name: 'L35 Epic Crypt',      cat: 'crypts',   pts: 120 },
+  ancientclaim:{ name: 'Ancient Crypt',     cat: 'crypts',   pts: 0   },
+  ancientkill: { name: 'Ancient Kill',      cat: 'crypts',   pts: 0   },
+
+  // Monsters
+  arcano:    { name: 'Arcanomancer',        cat: 'monsters', pts: 0   },
+  arachne:   { name: 'Arachne',            cat: 'monsters', pts: 0   },
+  arma:      { name: 'Armadillo',          cat: 'monsters', pts: 0   },
+  ashen:     { name: 'Ashen',              cat: 'monsters', pts: 100 },
+  basilisk:  { name: 'Basilisk',           cat: 'monsters', pts: 0   },
+  beastman:  { name: 'Beastman',           cat: 'monsters', pts: 0   },
+  briareus:  { name: 'Briareus',           cat: 'monsters', pts: 0   },
+  chimera:   { name: 'Chimera',            cat: 'monsters', pts: 0   },
+  hellforge: { name: 'Hellforge',          cat: 'monsters', pts: 0   },
+  shadow:    { name: 'Shadow',             cat: 'monsters', pts: 0   },
+  undead:    { name: 'Undead',             cat: 'monsters', pts: 0   },
+  hermes:    { name: 'Hermes',             cat: 'monsters', pts: 0   },
+  fenrir:    { name: 'Fenrir',             cat: 'monsters', pts: 0   },
+  jorg:      { name: 'Jörmungandr',        cat: 'monsters', pts: 0   },
+  jorgstore: { name: 'Jörmungandr Store',  cat: 'monsters', pts: 0   },
+  mimic:     { name: 'Mimic',              cat: 'monsters', pts: 0   },
+
+  // Hero chests
+  'l16-19h': { name: 'Hero L16-19',        cat: 'other',    pts: 0   },
+  'l20-24h': { name: 'Hero L20-24',        cat: 'other',    pts: 0   },
+  'l25-29h': { name: 'Hero L25-29',        cat: 'other',    pts: 0   },
+  'l30-34h': { name: 'Hero L30-34',        cat: 'other',    pts: 0   },
+  'l35-39h': { name: 'Hero L35-39',        cat: 'other',    pts: 0   },
+  'l40-44h': { name: 'Hero L40-44',        cat: 'other',    pts: 0   },
+  'l45h':    { name: 'Hero L45+',          cat: 'other',    pts: 0   },
+
+  // Troop chests
+  'l10-14t': { name: 'Troop L10-14',       cat: 'other',    pts: 0   },
+  'l15-19t': { name: 'Troop L15-19',       cat: 'other',    pts: 0   },
+  'l20-24t': { name: 'Troop L20-24',       cat: 'other',    pts: 0   },
+  'l25-29t': { name: 'Troop L25-29',       cat: 'other',    pts: 0   },
+  'l30-34t': { name: 'Troop L30-34',       cat: 'other',    pts: 0   },
+  'l35-39t': { name: 'Troop L35-39',       cat: 'other',    pts: 0   },
+  'l40-44t': { name: 'Troop L40-44',       cat: 'other',    pts: 0   },
+  'l45t':    { name: 'Troop L45+',         cat: 'other',    pts: 0   },
+  l10t:      { name: 'Troop L10',          cat: 'other',    pts: 0   },
+  l15t:      { name: 'Troop L15',          cat: 'other',    pts: 0   },
+  l20t:      { name: 'Troop L20',          cat: 'other',    pts: 0   },
+  l25t:      { name: 'Troop L25',          cat: 'other',    pts: 0   },
+  l30t:      { name: 'Troop L30',          cat: 'other',    pts: 0   },
+  l35t:      { name: 'Troop L35',          cat: 'other',    pts: 0   },
+
+  // Resource chests
+  'l20-24r': { name: 'Resource L20-24',    cat: 'other',    pts: 0   },
+  'l25-29r': { name: 'Resource L25-29',    cat: 'other',    pts: 0   },
+  'l30-34r': { name: 'Resource L30-34',    cat: 'other',    pts: 0   },
+  'l35-39r': { name: 'Resource L35-39',    cat: 'other',    pts: 0   },
+  'l40-44r': { name: 'Resource L40-44',    cat: 'other',    pts: 0   },
+  'l45r':    { name: 'Resource L45+',      cat: 'other',    pts: 0   },
+
+  // Omens
+  omenssum:  { name: 'Omens (summon)',      cat: 'omens',    pts: 0   },
+  omensdef:  { name: 'Omens (defence)',     cat: 'omens',    pts: 0   },
+  omensclaim:{ name: 'Omens (claim)',       cat: 'omens',    pts: 0   },
+
+  // Other
+  arena:     { name: 'Arena',              cat: 'other',    pts: 0   },
+  clanwealth:{ name: 'Clan Wealth',        cat: 'other',    pts: 0   },
+  merc:      { name: 'Mercenary',          cat: 'other',    pts: 0   },
+  union:     { name: 'Union',              cat: 'other',    pts: 0   },
+  auth:      { name: 'Authority',          cat: 'other',    pts: 0   },
+  bronze:    { name: 'Bronze Chest',       cat: 'other',    pts: 0   },
+  silver:    { name: 'Silver Chest',       cat: 'other',    pts: 0   },
+  golden:    { name: 'Golden Chest',       cat: 'other',    pts: 0   },
+  magic:     { name: 'Magic Chest',        cat: 'other',    pts: 0   },
+  precious:  { name: 'Precious Chest',     cat: 'other',    pts: 0   },
+  wooden:    { name: 'Wooden Chest',       cat: 'other',    pts: 0   },
+  carrot:    { name: 'Carrot',             cat: 'other',    pts: 0   },
+  other:     { name: 'Other',              cat: 'other',    pts: 0   },
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentData = null;
+let currentFilter = 'all';
+let hideZeros = false;
+const CACHE_KEY = 'chest-v1';
+
+function save(player, data) {
+  try { localStorage.setItem(`${CACHE_KEY}-${player}`, JSON.stringify({ data, ts: Date.now() })); } catch(e) {}
+}
+
+function loadCache(player) {
+  try {
+    const c = localStorage.getItem(`${CACHE_KEY}-${player}`);
+    if (!c) return null;
+    const { data, ts } = JSON.parse(c);
+    return { data, ageMin: Math.round((Date.now() - ts) / 60000) };
+  } catch(e) { return null; }
+}
+
+// ── Fetch ────────────────────────────────────────────────────────────────────
+async function loadData(forceRefresh = false) {
+  const player = document.getElementById('player-input').value.trim();
+  if (!player) { setStatus('Enter player name', 'error'); return; }
+
+  hide();
+
+  if (!forceRefresh) {
+    const cached = loadCache(player);
+    if (cached) {
+      setStatus(`Cached · ${cached.ageMin}min ago · ${player}`, 'success');
+      render(cached.data, player);
+      return;
+    }
+  }
+
+  setStatus('Fetching...', 'loading');
+
+  try {
+    // Use Netlify proxy function
+    const url = `/.netlify/functions/proxy?request=json2&player=${encodeURIComponent(player)}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+
+    if (json.error) throw new Error(json.error);
+
+    // Find our player in returned data
+    let playerData = null;
+
+    if (Array.isArray(json)) {
+      playerData = json.find(p =>
+        (p.main_username || '').toLowerCase() === player.toLowerCase() ||
+        (p.aliases || []).some(a => a.toLowerCase() === player.toLowerCase())
+      );
+    } else if (json.main_username) {
+      playerData = json;
+    } else if (json.data) {
+      if (Array.isArray(json.data)) {
+        playerData = json.data.find(p =>
+          (p.main_username || '').toLowerCase() === player.toLowerCase()
+        );
+      } else {
+        playerData = json.data;
+      }
+    }
+
+    if (!playerData) {
+      // Try clan-wide endpoint
+      await loadFromClan(player);
+      return;
+    }
+
+    save(player, playerData);
+    setStatus(`Live · ${player} · G${playerData.glvl || '?'}`, 'success');
+    render(playerData, player);
+
+  } catch(e) {
+    await loadFromClan(player);
+  }
+}
+
+async function loadFromClan(player) {
+  try {
+    const url = `/.netlify/functions/proxy?request=json`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+
+    const arr = Array.isArray(json) ? json : (json.data || []);
+    const playerData = arr.find(p =>
+      (p.main_username || '').toLowerCase() === player.toLowerCase() ||
+      (p.aliases || []).some(a => a.toLowerCase() === player.toLowerCase())
+    );
+
+    if (!playerData) {
+      const names = arr.slice(0, 5).map(p => p.main_username || '?').join(', ');
+      setStatus(`Player "${player}" not found. Try: ${names}`, 'error');
+      document.getElementById('empty').style.display = '';
+      return;
+    }
+
+    save(player, playerData);
+    setStatus(`Live · ${player} · G${playerData.glvl || '?'}`, 'success');
+    render(playerData, player);
+
+  } catch(e) {
+    setStatus(`Error: ${e.message}`, 'error');
+    document.getElementById('empty').style.display = '';
+  }
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render(data, player) {
+  currentData = data;
+  const totals = data.totals || data;
+
+  // Build rows
+  const rows = Object.entries(SOURCES).map(([key, def]) => ({
+    key,
+    name: def.name,
+    cat: def.cat,
+    pts: def.pts,
+    count: totals[key] || 0,
+    totalPts: (totals[key] || 0) * def.pts,
+  })).filter(r => r.key in totals);
+
+  const totalChests = data.total_chests || rows.reduce((s, r) => s + r.count, 0);
+  const selectedChests = data.selected_chest_total || rows.filter(r => r.pts > 0).reduce((s, r) => s + r.count, 0);
+  const totalPoints = data.total_points || rows.reduce((s, r) => s + r.totalPts, 0);
+  const avgVal = selectedChests > 0 ? (totalPoints / selectedChests).toFixed(1) : '0';
+
+  document.getElementById('s-total').textContent = totalChests.toLocaleString();
+  document.getElementById('s-selected').textContent = selectedChests.toLocaleString();
+  document.getElementById('s-points').textContent = totalPoints.toLocaleString();
+  document.getElementById('s-avg').textContent = avgVal;
+  document.getElementById('s-glvl').textContent = `G${data.glvl || '?'} player`;
+  document.getElementById('stats-grid').style.display = 'grid';
+  document.getElementById('tabs').style.display = 'flex';
+
+  renderTable(rows, totalChests);
+  renderBars(rows);
+  document.getElementById('chart-wrap').style.display = '';
+  document.getElementById('table-wrap').style.display = '';
+  document.getElementById('empty').style.display = 'none';
+}
+
+function renderTable(rows, totalChests) {
+  const filtered = rows
+    .filter(r => currentFilter === 'all' || r.cat === currentFilter)
+    .filter(r => !hideZeros || r.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const totalPtsFiltered = filtered.reduce((s, r) => s + r.totalPts, 0);
+  const totalCountFiltered = filtered.reduce((s, r) => s + r.count, 0);
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = filtered.map(r => {
+    const pct = totalChests > 0 ? (r.count / totalChests * 100).toFixed(1) : '0';
+    const ptsBadge = r.pts >= 100
+      ? `<span class="pts-badge high">${r.pts}</span>`
+      : r.pts > 0
+      ? `<span class="pts-badge mid">${r.pts}</span>`
+      : `<span class="pts-badge">${r.pts}</span>`;
+    return `<tr class="${r.count === 0 ? 'zero-row' : ''}">
+      <td>${r.name}</td>
+      <td>${r.cat}</td>
+      <td>${r.count.toLocaleString()}</td>
+      <td>${ptsBadge}</td>
+      <td>${r.totalPts > 0 ? r.totalPts.toLocaleString() : '—'}</td>
+      <td>${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML += `<tr class="total-row">
+    <td>TOTAL</td>
+    <td></td>
+    <td>${totalCountFiltered.toLocaleString()}</td>
+    <td></td>
+    <td>${totalPtsFiltered.toLocaleString()}</td>
+    <td>100%</td>
+  </tr>`;
+}
+
+function renderBars(rows) {
+  const filtered = rows
+    .filter(r => currentFilter === 'all' || r.cat === currentFilter)
+    .filter(r => r.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
+
+  const maxCount = filtered[0]?.count || 1;
+  document.getElementById('chart-sub').textContent = `top ${filtered.length}`;
+
+  document.getElementById('bar-chart').innerHTML = filtered.map(r => `
+    <div class="bar-row">
+      <div class="bar-name" title="${r.name}">${r.name}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${(r.count/maxCount*100).toFixed(1)}%"></div></div>
+      <div class="bar-count">${r.count.toLocaleString()}</div>
+      <div class="bar-pts">${r.pts > 0 ? '+' + r.totalPts.toLocaleString() + ' pts' : ''}</div>
+    </div>
+  `).join('');
+}
+
+function setFilter(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (currentData) {
+    const totals = currentData.totals || currentData;
+    const rows = Object.entries(SOURCES).map(([key, def]) => ({
+      key, name: def.name, cat: def.cat, pts: def.pts,
+      count: totals[key] || 0,
+      totalPts: (totals[key] || 0) * def.pts,
+    }));
+    const total = currentData.total_chests || rows.reduce((s,r) => s+r.count, 0);
+    renderTable(rows, total);
+    renderBars(rows);
+  }
+}
+
+function toggleZeros(el) {
+  hideZeros = !hideZeros;
+  el.classList.toggle('active', hideZeros);
+  el.textContent = hideZeros ? 'Show zeros' : 'Hide zeros';
+  if (currentData) setFilter(currentFilter, document.querySelector('.tab.active'));
+}
+
+function hide() {
+  ['stats-grid','chart-wrap','table-wrap','empty','tabs'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+}
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = `status ${type}`;
+}
+
+// Boot
+window.addEventListener('load', () => loadData());
+</script>
+</body>
+</html>
